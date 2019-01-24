@@ -1,33 +1,49 @@
-import org.apache.spark.SparkConf;
-import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.sql.*;
+import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Row;
+import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.types.DataTypes;
+import org.apache.spark.sql.types.StructType;
 
 public class Main {
 
     public static void main(String[] args) {
 
-        SparkConf conf = new SparkConf().setMaster("local").setAppName("App");
-        JavaSparkContext context = new JavaSparkContext(conf);
-        //JavaRDD<String> stringRDD = context.textFile("src/main/resources/hotels10.csv");
-
-        SparkSession spark = SparkSession.builder().getOrCreate();
-
-//        Dataset<Row> df = spark.read()
-
-//        Dataset<Row> df = spark.read().csv("src/main/resources/hotels10.csv");
-
-  //      df.show();
+        SparkSession spark = SparkSession
+                .builder()
+                .appName("Spark-Kafka-Integration")
+                .master("local")
+                .getOrCreate();
 
         Dataset<Row> df = spark
                 .readStream()
                 .format("kafka")
-                .option("kafka.bootstrap.servers", "sandbox-hdp.hortonworks.com:6667")
+                .option("kafka.bootstrap.servers", "172.18.0.2:6667")
+//                .option("kafka.bootstrap.servers", "local:0000")
                 .option("subscribe", "test")
                 .load();
 
-        df.show();
-//        df.write().json("test.json");
+        df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)");
+
+        /*
+        StructType mySchema = new StructType()
+                .add("", DataTypes.IntegerType)
+                .add("", DataTypes.StringType)
+                .add("", DataTypes.IntegerType)
+                .add("", DataTypes.DoubleType)
+                .add("", DataTypes.IntegerType);
+
+        spark
+                .readStream()
+                .schema(mySchema)
+                .csv("src/main/resources/moviedata.csv")
+                .selectExpr("CAST(id AS STRING) AS key", "to_json(struct(*)) AS value")
+                .writeStream()
+                .format("kafka")
+                .option("topic", "test")
+                .option("kafka.bootstrap.servers", "172.18.0.2:6667")
+                .option("checkpointLocation", "src/main/resources")
+                .start();
+        */
     }
 
 }
